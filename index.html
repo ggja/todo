@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <title>Todo List Daily (Dark Theme)</title>
   <style>
-    /* Основные стили для тёмной темы */
     * {
       box-sizing: border-box;
     }
@@ -21,7 +20,6 @@
       margin-bottom: 20px;
       font-weight: 300;
     }
-    /* Стили для формы */
     form {
       display: flex;
       justify-content: center;
@@ -50,14 +48,12 @@
     form button:hover {
       background-color: #555;
     }
-    /* Кнопка отмены редактирования */
     #cancel-btn {
       background-color: #c0392b;
     }
     #cancel-btn:hover {
       background-color: #e74c3c;
     }
-    /* Контейнер для задач */
     #tasks-container {
       max-width: 500px;
       margin: 0 auto;
@@ -66,7 +62,6 @@
       padding: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.5);
     }
-    /* Стили для отдельной задачи */
     .task {
       display: flex;
       align-items: center;
@@ -102,7 +97,6 @@
     .hidden {
       display: none;
     }
-    /* Стили для чекбокса */
     input[type="checkbox"] {
       width: 18px;
       height: 18px;
@@ -114,43 +108,41 @@
 <body>
   <h1>Todo List Daily</h1>
   
-  <!-- Форма добавления/редактирования задачи -->
   <form id="task-form">
-    <!-- Скрытое поле для хранения id задачи при редактировании -->
     <input type="hidden" id="task-id">
     <input type="text" id="task-input" placeholder="Введите задачу" required>
     <button type="submit">Сохранить</button>
     <button type="button" id="cancel-btn" class="hidden">Отмена</button>
   </form>
   
-  <!-- Контейнер для списка задач -->
+  
   <div id="tasks-container"></div>
   
   <script>
-    // Ключи для localStorage
+    
     const TASKS_KEY = 'tasks';
     const LAST_RESET_KEY = 'lastResetDate';
     
-    // Массив задач
+    
     let tasks = [];
-    // Глобальный счётчик для определения порядка задач
+    
     let nextOrder = 1;
     
-    // Функция сохранения задач в localStorage
+    
     function saveTasks() {
       localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
     }
     
-    // Функция загрузки задач из localStorage и инициализация nextOrder
+    
     function loadTasks() {
       const tasksStr = localStorage.getItem(TASKS_KEY);
       tasks = tasksStr ? JSON.parse(tasksStr) : [];
       
-      // Если задачи загружены, проверяем наличие order и определяем nextOrder
+      
       if (tasks.length > 0) {
         let maxOrder = 0;
         tasks.forEach(task => {
-          // Если поле order отсутствует (для совместимости со старыми данными)
+          
           if (typeof task.order === 'undefined') {
             task.order = task.id;
           }
@@ -164,13 +156,13 @@
       }
     }
     
-    // Получаем сегодняшнюю дату в формате YYYY-MM-DD
+    
     function getTodayString() {
       const now = new Date();
       return now.toISOString().split('T')[0];
     }
     
-    // Сброс флажков выполнения, если наступил новый день
+    
     function resetTasksIfNeeded() {
       const today = getTodayString();
       const lastReset = localStorage.getItem(LAST_RESET_KEY);
@@ -181,7 +173,7 @@
       }
     }
     
-    // Функция рендеринга задач. Сортировка происходит по значению order
+    
     function renderTasks() {
       const container = document.getElementById('tasks-container');
       container.innerHTML = '';
@@ -192,19 +184,19 @@
         const taskDiv = document.createElement('div');
         taskDiv.className = 'task' + (task.done ? ' done' : '');
         
-        // Чекбокс для отметки выполнения
+        
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.checked = task.done;
         checkbox.addEventListener('change', function() {
           if (checkbox.checked) {
-            // При установке флажка: помечаем задачу выполненной и обновляем порядок,
-            // чтобы переместить её в конец
+            
+            
             task.done = true;
             task.order = nextOrder++;
           } else {
-            // При снятии флажка: задача становится не выполненной, но её order не меняется,
-            // поэтому она остаётся на своём месте
+            
+            
             task.done = false;
           }
           saveTasks();
@@ -212,11 +204,11 @@
         });
         taskDiv.appendChild(checkbox);
         
-        // Метка с текстом задачи. При клике запускается режим редактирования.
+        
         const label = document.createElement('label');
         label.textContent = task.content;
         label.addEventListener('click', function() {
-          // Режим редактирования: заполняем форму данными задачи
+          
           document.getElementById('task-id').value = task.id;
           document.getElementById('task-input').value = task.content;
           document.getElementById('cancel-btn').classList.remove('hidden');
@@ -224,7 +216,7 @@
         });
         taskDiv.appendChild(label);
         
-        // Кнопка для удаления задачи
+        
         const deleteBtn = document.createElement('button');
         deleteBtn.textContent = 'Удалить';
         deleteBtn.addEventListener('click', function() {
@@ -238,7 +230,7 @@
       });
     }
     
-    // Обработка отправки формы (добавление или редактирование задачи)
+    
     document.getElementById('task-form').addEventListener('submit', function(e) {
       e.preventDefault();
       const taskInput = document.getElementById('task-input');
@@ -247,13 +239,13 @@
       if (content === '') return;
       
       if (taskIdInput.value) {
-        // Режим редактирования: обновляем задачу
+        
         const task = tasks.find(t => t.id == taskIdInput.value);
         if (task) {
           task.content = content;
         }
       } else {
-        // Режим создания: добавляем новую задачу с порядковым номером order
+        
         const newTask = {
           id: Date.now(),
           content: content,
@@ -266,20 +258,20 @@
       saveTasks();
       renderTasks();
       
-      // Сброс формы
+      
       taskInput.value = '';
       taskIdInput.value = '';
       document.getElementById('cancel-btn').classList.add('hidden');
     });
     
-    // Обработка кнопки "Отмена" для отмены редактирования
+    
     document.getElementById('cancel-btn').addEventListener('click', function() {
       document.getElementById('task-id').value = '';
       document.getElementById('task-input').value = '';
       document.getElementById('cancel-btn').classList.add('hidden');
     });
     
-    // Инициализация: загрузка задач, сброс флажков при новом дне и рендеринг списка
+    
     loadTasks();
     resetTasksIfNeeded();
     renderTasks();
