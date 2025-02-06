@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Todo List Daily (Dark Theme)</title>
+  <title>Todo List Daily (Dark Theme + Notifications)</title>
   <style>
+    /* Basic styles for dark theme */
     * {
       box-sizing: border-box;
     }
@@ -20,6 +21,7 @@
       margin-bottom: 20px;
       font-weight: 300;
     }
+    /* Styles for the form */
     form {
       display: flex;
       justify-content: center;
@@ -48,12 +50,14 @@
     form button:hover {
       background-color: #555;
     }
+    /* Cancel button for editing */
     #cancel-btn {
       background-color: #c0392b;
     }
     #cancel-btn:hover {
       background-color: #e74c3c;
     }
+    /* Container for tasks */
     #tasks-container {
       max-width: 500px;
       margin: 0 auto;
@@ -62,6 +66,7 @@
       padding: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.5);
     }
+    /* Styles for individual task */
     .task {
       display: flex;
       align-items: center;
@@ -97,6 +102,7 @@
     .hidden {
       display: none;
     }
+    /* Styles for checkbox */
     input[type="checkbox"] {
       width: 18px;
       height: 18px;
@@ -108,41 +114,43 @@
 <body>
   <h1>Todo List Daily</h1>
   
+  <!-- Form for adding/editing a task -->
   <form id="task-form">
+    <!-- Hidden field to store task id when editing -->
     <input type="hidden" id="task-id">
-    <input type="text" id="task-input" placeholder="task..." required>
+    <input type="text" id="task-input" placeholder="Enter task" required>
     <button type="submit">Save</button>
     <button type="button" id="cancel-btn" class="hidden">Cancel</button>
   </form>
   
-  
+  <!-- Container for task list -->
   <div id="tasks-container"></div>
   
   <script>
-    
+    // LocalStorage keys
     const TASKS_KEY = 'tasks';
     const LAST_RESET_KEY = 'lastResetDate';
     
-    
+    // Array to hold tasks
     let tasks = [];
-    
+    // Global counter for task ordering
     let nextOrder = 1;
     
-    
+    // Save tasks to localStorage
     function saveTasks() {
       localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
     }
     
-    
+    // Load tasks from localStorage and initialize nextOrder
     function loadTasks() {
       const tasksStr = localStorage.getItem(TASKS_KEY);
       tasks = tasksStr ? JSON.parse(tasksStr) : [];
       
-      
+      // If tasks exist, ensure each task has an 'order' property and determine nextOrder
       if (tasks.length > 0) {
         let maxOrder = 0;
         tasks.forEach(task => {
-          
+          // For compatibility with old data: if order is missing, set it to task.id
           if (typeof task.order === 'undefined') {
             task.order = task.id;
           }
@@ -156,13 +164,13 @@
       }
     }
     
-    
+    // Get today's date in YYYY-MM-DD format
     function getTodayString() {
       const now = new Date();
       return now.toISOString().split('T')[0];
     }
     
-    
+    // Reset task completion flags if a new day has started
     function resetTasksIfNeeded() {
       const today = getTodayString();
       const lastReset = localStorage.getItem(LAST_RESET_KEY);
@@ -173,7 +181,7 @@
       }
     }
     
-    
+    // Render tasks sorted by the 'order' property
     function renderTasks() {
       const container = document.getElementById('tasks-container');
       container.innerHTML = '';
@@ -184,19 +192,17 @@
         const taskDiv = document.createElement('div');
         taskDiv.className = 'task' + (task.done ? ' done' : '');
         
-        
+        // Checkbox for marking task completion
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.checked = task.done;
         checkbox.addEventListener('change', function() {
           if (checkbox.checked) {
-            
-            
+            // When checked: mark task as completed and update order to move it to the end
             task.done = true;
             task.order = nextOrder++;
           } else {
-            
-            
+            // When unchecked: task becomes incomplete, but order remains unchanged
             task.done = false;
           }
           saveTasks();
@@ -204,11 +210,11 @@
         });
         taskDiv.appendChild(checkbox);
         
-        
+        // Label with task content; clicking initiates editing mode
         const label = document.createElement('label');
         label.textContent = task.content;
         label.addEventListener('click', function() {
-          
+          // Editing mode: populate form with task data
           document.getElementById('task-id').value = task.id;
           document.getElementById('task-input').value = task.content;
           document.getElementById('cancel-btn').classList.remove('hidden');
@@ -216,7 +222,7 @@
         });
         taskDiv.appendChild(label);
         
-        
+        // Delete button to remove the task
         const deleteBtn = document.createElement('button');
         deleteBtn.textContent = 'Delete';
         deleteBtn.addEventListener('click', function() {
@@ -230,7 +236,7 @@
       });
     }
     
-    
+    // Handle form submission for adding or editing a task
     document.getElementById('task-form').addEventListener('submit', function(e) {
       e.preventDefault();
       const taskInput = document.getElementById('task-input');
@@ -239,13 +245,13 @@
       if (content === '') return;
       
       if (taskIdInput.value) {
-        
+        // Editing mode: update the task
         const task = tasks.find(t => t.id == taskIdInput.value);
         if (task) {
           task.content = content;
         }
       } else {
-        
+        // Creation mode: add a new task with an order value
         const newTask = {
           id: Date.now(),
           content: content,
@@ -258,23 +264,64 @@
       saveTasks();
       renderTasks();
       
-      
+      // Reset form fields
       taskInput.value = '';
       taskIdInput.value = '';
       document.getElementById('cancel-btn').classList.add('hidden');
     });
     
-    
+    // Handle cancel button click to exit editing mode
     document.getElementById('cancel-btn').addEventListener('click', function() {
       document.getElementById('task-id').value = '';
       document.getElementById('task-input').value = '';
       document.getElementById('cancel-btn').classList.add('hidden');
     });
     
-    
+    // Initialize: load tasks, reset flags if needed, and render the task list
     loadTasks();
     resetTasksIfNeeded();
     renderTasks();
+    
+    // Function to send a notification with the list of incomplete tasks
+    function sendIncompleteTasksNotification() {
+      // Filter tasks that are not completed
+      const incompleteTasks = tasks.filter(task => !task.done);
+      let message;
+      if (incompleteTasks.length === 0) {
+        message = 'Congratulations, all tasks are completed!';
+      } else {
+        message = incompleteTasks.map(task => '• ' + task.content).join('\n');
+      }
+      // Send notification if permission is granted
+      if (Notification.permission === "granted") {
+        new Notification("Incomplete Tasks", { body: message });
+      }
+    }
+    
+    // Function to initialize notifications
+    function initNotifications() {
+      if (!("Notification" in window)) {
+        console.log("This browser does not support notifications.");
+        return;
+      }
+      
+      if (Notification.permission === "granted") {
+        // If permission is already granted, send a notification and set up periodic notifications
+        sendIncompleteTasksNotification();
+        setInterval(sendIncompleteTasksNotification, 10800000); // every 3 hours
+      } else if (Notification.permission !== "denied") {
+        // Request notification permission
+        Notification.requestPermission().then(permission => {
+          if (permission === "granted") {
+            sendIncompleteTasksNotification();
+            setInterval(sendIncompleteTasksNotification, 10800000);
+          }
+        });
+      }
+    }
+    
+    // Initialize notifications after page load
+    initNotifications();
   </script>
 </body>
 </html>
