@@ -133,34 +133,25 @@
     
     // Array to hold tasks
     let tasks = [];
-    // Global counter for task ordering
-    let nextOrder = 1;
+    // Global counter for completed tasks ordering
+    let nextCompletedOrder = 1;
     
     // Save tasks to localStorage
     function saveTasks() {
       localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
     }
     
-    // Load tasks from localStorage and initialize nextOrder
+    // Load tasks from localStorage and initialize nextCompletedOrder
     function loadTasks() {
       const tasksStr = localStorage.getItem(TASKS_KEY);
       tasks = tasksStr ? JSON.parse(tasksStr) : [];
       
-      // If tasks exist, ensure each task has an 'order' property and determine nextOrder
-      if (tasks.length > 0) {
-        let maxOrder = 0;
-        tasks.forEach(task => {
-          // For compatibility with old data: if order is missing, set it to task.id
-          if (typeof task.order === 'undefined') {
-            task.order = task.id;
-          }
-          if (task.order > maxOrder) {
-            maxOrder = task.order;
-          }
-        });
-        nextOrder = maxOrder + 1;
+      // Initialize nextCompletedOrder based on completed tasks
+      const completedTasks = tasks.filter(task => task.done);
+      if (completedTasks.length > 0) {
+        nextCompletedOrder = Math.max(...completedTasks.map(task => task.order)) + 1;
       } else {
-        nextOrder = 1;
+        nextCompletedOrder = 1;
       }
     }
     
@@ -181,7 +172,7 @@
       }
     }
     
-    // Render tasks sorted by the 'order' property
+    // Render tasks sorted by the 'order' property (ascending order)
     function renderTasks() {
       const container = document.getElementById('tasks-container');
       container.innerHTML = '';
@@ -200,7 +191,7 @@
           if (checkbox.checked) {
             // When checked: mark task as completed and update order to move it to the end
             task.done = true;
-            task.order = nextOrder++;
+            task.order = nextCompletedOrder++;
           } else {
             // When unchecked: task becomes incomplete, but order remains unchanged
             task.done = false;
@@ -251,12 +242,20 @@
           task.content = content;
         }
       } else {
-        // Creation mode: add a new task with an order value
+        // Creation mode: add a new task at the beginning of the list
+        let newOrder;
+        const incompleteTasks = tasks.filter(task => !task.done);
+        if (incompleteTasks.length > 0) {
+          // New task order is less than the smallest order among incomplete tasks
+          newOrder = Math.min(...incompleteTasks.map(task => task.order)) - 1;
+        } else {
+          newOrder = 0;
+        }
         const newTask = {
           id: Date.now(),
           content: content,
           done: false,
-          order: nextOrder++
+          order: newOrder
         };
         tasks.push(newTask);
       }
